@@ -1,13 +1,19 @@
-on: 
-  pull_request:
-    types: [opened]
+name: Check linked issues
+
+on:
+  pull_request_target:
+    types: [opened, edited, reopened, synchronize]
 
 jobs:
-  copy-labels:
+  check_pull_requests:
     runs-on: ubuntu-latest
-    name: Copy labels from linked issues
+    name: Check linked issues
+    permissions:
+        issues: read
+        pull-requests: write
     steps:
-      - name: copy-labels
-        uses: michalvankodev/copy-issue-labels@v1.2.1
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: nearform-actions/github-action-check-linked-issues@v1
+        id: check-linked-issues
+      # OPTIONAL: Use the output from the `check-linked-issues` step
+      - name: Get the output
+        run: echo "How many linked issues? ${{ steps.check-linked-issues.outputs.linked_issues_count }}"
