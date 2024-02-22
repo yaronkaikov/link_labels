@@ -1,19 +1,27 @@
-name: Check linked issues
+    - name: Find linked issues
+      id: find-linked-issues
+      uses: Ismoh-Games/find-linked-issues@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        repository: ${{ github.repository }}
+        pull-request-number: ${{ github.event.pull_request.number }}
+        pull-request-body: ${{ github.event.pull_request.body }}
+        copy-issues-labels: true # optional
+        include-closed-issues: true # optional
 
-on:
-  pull_request_target:
-    types: [opened, edited, reopened, synchronize, assigned]
+    # Use the output from the `find-linked-issues` step
+    - name: Use the output
+      run: |
+        echo "is-pull-request-linked-to-issues: ${{ steps.find-linked-issues.outputs.is-pull-request-linked-to-issues }}"
+        echo "linked-issues: ${{ steps.find-linked-issues.outputs.linked-issues }}"
+        echo "pull-request-labels: ${{ steps.find-linked-issues.outputs.pull-request-labels }}"
 
-jobs:
-  check_pull_requests:
-    runs-on: ubuntu-latest
-    name: Check linked issues
-    permissions:
-        issues: read
-        pull-requests: write
-    steps:
-      - uses: nearform-actions/github-action-check-linked-issues@v1
-        id: check-linked-issues
-      # OPTIONAL: Use the output from the `check-linked-issues` step
-      - name: Get the output
-        run: echo "How many linked issues? ${{ steps.check-linked-issues.outputs }}"
+    - name: Conditional step
+      if: ${{ steps.find-linked-issues.outputs.is-pull-request-linked-to-issues == 'True' }}
+      run: |
+        echo "Pull request is linked to issues"
+
+    - name: Another conditional step
+      if: ${{ steps.find-linked-issues.outputs.is-pull-request-linked-to-issues == 'False' }}
+      run: |
+        exit 1
