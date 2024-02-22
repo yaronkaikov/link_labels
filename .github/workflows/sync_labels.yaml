@@ -1,10 +1,6 @@
 on:
   pull_request:
-    - opened
-    - synchronize
-    - labeled
-    - unlabled
-    
+    target: [labeld, unlabeld]
 
 jobs:
   one:
