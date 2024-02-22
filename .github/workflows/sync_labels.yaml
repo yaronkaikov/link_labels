@@ -1,6 +1,16 @@
+on:
+  pull_request_target:
+    types: [opened, edited, synchronize]
+  pull_request:
+    types: [opened, edited, synchronize]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
     - name: Find linked issues
       id: find-linked-issues
-      uses: Ismoh-Games/find-linked-issues@v1
+      uses: Ismoh-Games/find-linked-issues@v1.0.6
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         repository: ${{ github.repository }}
