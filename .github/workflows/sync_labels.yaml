@@ -1,27 +1,16 @@
-    - name: Find linked issues
-      id: find-linked-issues
-      uses: Ismoh-Games/find-linked-issues@v1
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        repository: ${{ github.repository }}
-        pull-request-number: ${{ github.event.pull_request.number }}
-        pull-request-body: ${{ github.event.pull_request.body }}
-        copy-issues-labels: true # optional
-        include-closed-issues: true # optional
+on:
+  pull_request:
+    - opened
+    - synchronize
+    - labeled
+    - unlabled
+    
 
-    # Use the output from the `find-linked-issues` step
-    - name: Use the output
-      run: |
-        echo "is-pull-request-linked-to-issues: ${{ steps.find-linked-issues.outputs.is-pull-request-linked-to-issues }}"
-        echo "linked-issues: ${{ steps.find-linked-issues.outputs.linked-issues }}"
-        echo "pull-request-labels: ${{ steps.find-linked-issues.outputs.pull-request-labels }}"
-
-    - name: Conditional step
-      if: ${{ steps.find-linked-issues.outputs.is-pull-request-linked-to-issues == 'True' }}
-      run: |
-        echo "Pull request is linked to issues"
-
-    - name: Another conditional step
-      if: ${{ steps.find-linked-issues.outputs.is-pull-request-linked-to-issues == 'False' }}
-      run: |
-        exit 1
+jobs:
+  one:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJSON(github) }}
+        run: echo "$GITHUB_CONTEXT"
