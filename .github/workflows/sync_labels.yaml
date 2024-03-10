@@ -1,10 +1,9 @@
 on:
+  issues:
+    types: [labeled, unlabeled]
   pull_request:
-    - opened
-    - synchronize
-    - labeled
-    - unlabled
-    
+    types: [opened, labeled, unlabeled]
+    branches: [master, next, main]
 
 jobs:
   one:
