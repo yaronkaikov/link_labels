@@ -40,21 +40,14 @@ def get_pr_request_body(repo, pr_number):
 
 
 def get_linked_issues(pr_body):
-    pattern = re.compile(r'Fixes:? (?:#|https.*)(\d+)', re.IGNORECASE)
+    pattern = re.compile(r'Fixes:? (?:#|https.*?/issues/)(\d+)', re.IGNORECASE)
     matches = re.findall(pattern, pr_body)
     if not matches:
         raise RuntimeError("No regex matches found in the body!")
     issue_numbers = []
     for match in matches:
-        for entry in match:
-            if "#" not in entry:
-                issue_number = entry
-                issue_numbers.append(issue_number)
-            else:
-                index = entry.index("#")
-                issue_number = entry[index + 1:]
-                issue_numbers.append(issue_number)
-                print(f"Found issue number: {issue_number}")
+        issue_numbers.append(match)
+        print(f"Found issue number: {match}")
     return issue_numbers
 
 
@@ -64,6 +57,7 @@ def sync_labels(issue_numbers, pr_number, repo, label_action):
     pull_request_labels = [label.name for label in github.get_repo(repo).get_pull(int(pr_number)).get_labels()]
     for issue_number in issue_numbers:
         issue_labels = [label.name for label in github.get_repo(repo).get_issue(int(issue_number)).get_labels()]
+        print(issue_labels)
         if label_action == 'opened':
             for label in issue_labels:
                 if label and label not in pull_request_labels:
