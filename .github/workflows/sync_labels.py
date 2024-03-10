@@ -1,71 +1,102 @@
-import requests
+#!/usr/bin/env python3
+
+import argparse
 import os
+import re
+import sys
+import requests
+import json
+from github import Github
+
+try:
+    github_token = os.environ["GITHUB_TOKEN"]
+except KeyError:
+    print("Please set the 'GITHUB_TOKEN' environment variable")
+    sys.exit(1)
 
 
-def find_linked_pr(repo, number):
-    """
-    Finds the linked PR(s) to a given issue.
-    """
-    events_url = f'https://api.github.com/repos/{repo}/issues/{number}/events'
-    response = requests.get(events_url, headers=headers)
-    linked_pr = []
+def parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--repository', type=str, required=True,
+                        help='Github repository name (e.g., scylladb/scylladb)')
+    parser.add_argument('--pr_number', type=int, required=True,
+                        help='Pull request number to sync labels from linked issue')
+    parser.add_argument('--label_action', type=str, choices=['opened', 'labeled', 'unlabeled'], required=True, help='Sync labels action')
+    return parser.parse_args()
 
-    if response.status_code == 200:
-        events = response.json()
-        for event in events:
-            print(event)
-            # Look for 'cross-referenced' events which indicate a link to a PR
-            if event['event'] == 'labeled':
-                print("1")
-                pr = event['labeled']['pull_request']['url']
-                linked_prs.append(pr)
+
+def get_pr_request_body(repo, pr_number):
+    url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}"
+    headers = {
+        'Authorization': f'token {github_token}',
+        'Accept': 'application/vnd.github.v3+json'
+    }
+    response = requests.get(url, headers=headers)
+    if response.ok:
+        pr_details = response.json()
+        return pr_details['body']
     else:
-        print(f'Failed to fetch events: {response.status_code}')
-
-    return linked_pr
+        print("Failed to fetch PR details. Status code:", response.status_code)
 
 
-# Example usage
-issue_number = '17482'
-repo_name = 'scylladb/scylladb'
-github_token = os.getenv('GITHUB_TOKEN')
+def get_linked_issues(pr_body):
+    pattern = re.compile(r'Fixes:? (?:#|https.*)(\d+)', re.IGNORECASE)
+    matches = re.findall(pattern, pr_body)
+    if not matches:
+        raise RuntimeError("No regex matches found in the body!")
+    issue_numbers = []
+    for match in matches:
+        for entry in match:
+            if "#" not in entry:
+                issue_number = entry
+                issue_numbers.append(issue_number)
+            else:
+                index = entry.index("#")
+                issue_number = entry[index + 1:]
+                issue_numbers.append(issue_number)
+                print(f"Found issue number: {issue_number}")
+    return issue_numbers
 
-# GitHub API headers
-headers = {
-    'Authorization': f'token {github_token}',
-    'Accept': 'application/vnd.github.v3+json',
-}
-linked_prs = find_linked_pr(repo_name, issue_number)
-for pr_url in linked_prs:
-    print(f'Linked PR: {pr_url}')
+
+def sync_labels(issue_numbers, pr_number, repo, label_action):
+    print('Sync labels from Issue to linked pull request')
+    github = Github(github_token)
+    pull_request_labels = [label.name for label in github.get_repo(repo).get_pull(int(pr_number)).get_labels()]
+    for issue_number in issue_numbers:
+        issue_labels = [label.name for label in github.get_repo(repo).get_issue(int(issue_number)).get_labels()]
+        if label_action == 'opened':
+            for label in issue_labels:
+                if label and label not in pull_request_labels:
+                    github.get_repo(repo).get_pull(int(pr_number)).add_to_labels(label)
+                    print(f"Found and added issue label: {label}")
+        else:
+            pull_request_labels = [label.name for label in github.get_repo(repo).get_pull(int(pr_number)).get_labels() if label.name.startswith('backport/')]
+            issue_backport_label = [label.name for label in github.get_repo(repo).get_issue(int(issue_number)).get_labels() if label.name.startswith('backport/')]
+            filter_pull_request_labels = [label for label in pull_request_labels if label not in issue_backport_label]
+            filter_issue_labels = [label for label in issue_backport_label if label not in pull_request_labels]
+
+            if label_action == 'labeled':
+                for filter_pull_request_label in filter_pull_request_labels:
+                    github.get_repo(repo).get_issue(int(issue_number)).add_to_labels(filter_pull_request_label)
+                for filter_issue_label in filter_issue_labels:
+                    github.get_repo(repo).get_pull(int(pr_number)).add_to_labels(filter_issue_label)
+
+            if label_action == 'unlabeled':
+                if filter_pull_request_labels:
+                    for label in filter_pull_request_labels:
+                        github.get_repo(repo).get_issue(int(pr_number)).remove_from_labels(label)
+                if filter_issue_labels:
+                    for label in filter_issue_labels:
+                        github.get_repo(repo).get_issue(int(issue_number)).remove_from_labels(label)
 
 
-# from github import Github
-# import os
-#
-#
-# def sync_labels(issue_number, repo_name, github_token):
-#     g = Github(github_token)
-#     repo = g.get_repo(repo_name)
-#     issue = repo.get_issue(number=issue_number)
-#     labels = [label.name for label in issue.labels]
-#
-#     # Logic to find linked PR goes here
-#     # This is a placeholder for demonstration
-#     linked_pr_number = find_linked_pr(issue)
-#     if linked_pr_number:
-#         pr = repo.get_pull(linked_pr_number)
-#         # Sync labels from issue to PR
-#         pr.set_labels(*labels)
-#
-#
-# def find_linked_pr(issue):
-#
-#     return None
-#
-#
-# if __name__ == '__main__':
-#     issue_number = '17482'
-#     repo_name = 'scylladb/scylladb'
-#     github_token = os.getenv('GITHUB_TOKEN')
-#     sync_labels(issue_number, repo_name, github_token)
+def main():
+    args = parser()
+    pr_number = args.pr_number
+    pr_body = get_pr_request_body(args.repository, pr_number)
+    issue_numbers = get_linked_issues(pr_body)
+    sync_labels(issue_numbers, pr_number, args.repository, args.label_action)
+
+
+if __name__ == "__main__":
+    main()

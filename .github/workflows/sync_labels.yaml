@@ -1,15 +1,32 @@
+name: Sync labels
+
 on:
-  issues:
-    types: [labeled, unlabeled]
   pull_request:
     types: [opened, labeled, unlabeled]
-    branches: [master, next, main]
+    branches: [master, next]
+  issues:
+    types: [labeled, unlabeled]
 
 jobs:
-  one:
+  check-commit:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      issues: write
     steps:
       - name: Dump GitHub context
         env:
           GITHUB_CONTEXT: ${{ toJSON(github) }}
         run: echo "$GITHUB_CONTEXT"
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for all tags and branches
+
+      - name: Install dependencies
+        run: sudo apt-get install -y python3-github
+
+      - name: Run python script
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python .github/scripts/sync_labels.py --repository ${{ github.repository }} --pr_number ${{ github.event.number }} --label_action ${{ github.event.action }}
