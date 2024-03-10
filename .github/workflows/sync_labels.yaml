@@ -3,12 +3,12 @@ name: Sync labels
 on:
   pull_request:
     types: [opened, labeled, unlabeled]
-    branches: [master, next]
+    branches: [master, next, main]
   issues:
     types: [labeled, unlabeled]
 
 jobs:
-  check-commit:
+  label-sync:
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -18,6 +18,7 @@ jobs:
         env:
           GITHUB_CONTEXT: ${{ toJSON(github) }}
         run: echo "$GITHUB_CONTEXT"
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -26,7 +27,14 @@ jobs:
       - name: Install dependencies
         run: sudo apt-get install -y python3-github
 
-      - name: Run python script
+      - name: Run python script for pull request
+        if: ${{ github.event_name == 'pull_request' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python .github/scripts/sync_labels.py --repository ${{ github.repository }} --pr_number ${{ github.event.number }} --label_action ${{ github.event.action }}
+        run: python .github/workflows/sync_labels.py --repository ${{ github.repository }} --number ${{ github.event.number }} --label_action ${{ github.event.action }}
+
+      - name: Run python script for issues
+        if: ${{ github.event_name == 'issues' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python .github/workflows/sync_labels.py --repository ${{ github.repository }} --number ${{ github.event.issue.number }} --label_action ${{ github.event.action }} --is_issue
