@@ -3,7 +3,7 @@ name: Sync labels
 on:
   pull_request:
     types: [opened, labeled, unlabeled]
-    branches: [master, next]
+    branches: [master, next, main]
   issues:
     types: [labeled, unlabeled]
 
@@ -29,4 +29,4 @@ jobs:
       - name: Run python script
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python .github/scripts/sync_labels.py --repository ${{ github.repository }} --pr_number ${{ github.event.number }} --label_action ${{ github.event.action }}
+        run: python .github/workflows/sync_labels.py --repository ${{ github.repository }} --pr_number ${{ github.event.number }} --label_action ${{ github.event.action }}
