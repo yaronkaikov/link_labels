@@ -53,7 +53,7 @@ def get_linked_issues(pr_body):
 
 
 def get_linked_prs(repo, issue_number, token):
-    query = f"repo:{repo} is:pr linked:issue {issue_number}"
+    query = f"repo:{repo} is:pr is:open linked:issue {issue_number}"
     url = f"https://api.github.com/search/issues?q={query}"
     headers = {"Authorization": f"Bearer {token}"}
     response = requests.get(url, headers=headers)
