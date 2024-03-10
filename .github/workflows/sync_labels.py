@@ -19,9 +19,10 @@ def parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--repository', type=str, required=True,
                         help='Github repository name (e.g., scylladb/scylladb)')
-    parser.add_argument('--pr_number', type=int, required=True,
+    parser.add_argument('--number', type=int, required=True,
                         help='Pull request number to sync labels from linked issue')
     parser.add_argument('--label_action', type=str, choices=['opened', 'labeled', 'unlabeled'], required=True, help='Sync labels action')
+    parser.add_argument('--is_issue', action='store_true', help='Update from Issue')
     return parser.parse_args()
 
 
@@ -84,9 +85,30 @@ def sync_labels(issue_numbers, pr_number, repo, label_action):
                         github.get_repo(repo).get_issue(int(issue_number)).remove_from_labels(label)
 
 
+def get_linked_prs(repo, issue_number, token):
+    query = f"repo:{repo} is:pr issue:{issue_number}"
+    url = f"https://api.github.com/search/issues?q={query}"
+    headers = {
+        'Authorization': f'token {token}',
+        'Accept': 'application/vnd.github.v3+json'
+    }
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        prs = response.json().get('items', [])
+        return prs
+    else:
+        raise Exception(f"GitHub API returned {response.status_code}: {response.text}")
+
+
 def main():
     args = parser()
-    pr_number = args.pr_number
+    if args.is_issue:
+        linked_prs = get_linked_prs(args.repository, args.number, github_token)
+        for pr in linked_prs:
+            print(f"PR #{pr['number']}: {pr['title']}")
+        pr_number = pr['number']
+    else:
+        pr_number = args.number
     pr_body = get_pr_request_body(args.repository, pr_number)
     issue_numbers = get_linked_issues(pr_body)
     sync_labels(issue_numbers, pr_number, args.repository, args.label_action)
