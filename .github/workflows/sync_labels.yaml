@@ -10,6 +10,7 @@ on:
 jobs:
   label-sync:
     runs-on: ubuntu-latest
+    if: github.event.label.name == 'backport/'
     permissions:
       pull-requests: write
       issues: write
@@ -26,10 +27,10 @@ jobs:
         if: ${{ github.event_name == 'pull_request' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python .github/scripts/sync_labels.py --repository ${{ github.repository }} --number ${{ github.event.number }} --label_action ${{ github.event.action }}
+        run: python .github/scripts/sync_labels.py --repository ${{ github.repository }} --number ${{ github.event.number }} --label_action ${{ github.event.action }} --label ${{ github.event.label.name }}
 
       - name: Run python script for issues
         if: ${{ github.event_name == 'issues' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python .github/scripts/sync_labels.py --repository ${{ github.repository }} --number ${{ github.event.issue.number }} --label_action ${{ github.event.action }} --is_issue
+        run: python .github/scripts/sync_labels.py --repository ${{ github.repository }} --number ${{ github.event.issue.number }} --label_action ${{ github.event.action }} --is_issue --label ${{ github.event.label.name }}
