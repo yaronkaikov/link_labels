@@ -26,13 +26,13 @@ jobs:
         if: ${{ github.event.pull_request }} && ${{ github.event.action.opened }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python .github/scripts/sync_labels.py --repository ${{ github.repository }} --number ${{ github.event.number }} --label_action ${{ github.event.action }} --label ${{ github.event.label.name }}
+        run: python .github/scripts/sync_labels.py --repository ${{ github.repository }} --number ${{ github.event.number }} --label_action ${{ github.event.action }}
 
       - name: Pull request labeled or unlabeled event
         if: ${{ github.event.pull_request }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python .github/scripts/sync_labels.py --repository ${{ github.repository }} --number ${{ github.event.number }} --label_action ${{ github.event.action }}
+        run: python .github/scripts/sync_labels.py --repository ${{ github.repository }} --number ${{ github.event.number }} --label_action ${{ github.event.action }} --label ${{ github.event.label.name }}
 
       - name: Issue labeled or unlabeled event
         if: ${{ github.event.issue }}
