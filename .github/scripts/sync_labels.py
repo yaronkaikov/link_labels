@@ -21,7 +21,7 @@ def parser():
                         help='Github repository name (e.g., scylladb/scylladb)')
     parser.add_argument('--number', type=int, required=True,
                         help='Pull request number to sync labels from linked issue')
-    parser.add_argument('--label', type=str, required=True, help='Label to add/remove from an issue or PR')
+    parser.add_argument('--label', type=str, help='Label to add/remove from an issue or PR')
     parser.add_argument('--is_issue', action='store_true', help='Determined if label change is in Issue or not')
     parser.add_argument('--label_action', type=str, choices=['opened', 'labeled', 'unlabeled'], required=True, help='Sync labels action')
     return parser.parse_args()

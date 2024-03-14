@@ -10,7 +10,7 @@ on:
 jobs:
   label-sync:
     runs-on: ubuntu-latest
-    if: github.event.label.name == 'backport/'
+    if: github.event.action == 'opened' || github.event.label.name == 'backport/'
     permissions:
       pull-requests: write
       issues: write
