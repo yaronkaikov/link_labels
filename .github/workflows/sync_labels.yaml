@@ -18,6 +18,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Fetch all history for all tags and branches
+
       - name: Install dependencies
         run: sudo apt-get install -y python3-github
 
@@ -28,13 +29,13 @@ jobs:
         run: python .github/scripts/sync_labels.py --repository ${{ github.repository }} --number ${{ github.event.number }} --label_action ${{ github.event.action }}
 
       - name: Pull request labeled or unlabeled event
-        if: github.event_name == 'pull_request' && github.event.label.name == 'backport/'
+        if: github.event_name == 'pull_request' && startsWith(github.event.label.name, 'backport')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python .github/scripts/sync_labels.py --repository ${{ github.repository }} --number ${{ github.event.number }} --label_action ${{ github.event.action }} --label ${{ github.event.label.name }}
 
       - name: Issue labeled or unlabeled event
-        if: github.event_name == 'issue' && github.event.label.name == 'backport/'
+        if: github.event_name == 'issue' && startsWith(github.event.label.name, 'backport')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python .github/scripts/sync_labels.py --repository ${{ github.repository }} --number ${{ github.event.issue.number }} --label_action ${{ github.event.action }} --is_issue --label ${{ github.event.label.name }}
