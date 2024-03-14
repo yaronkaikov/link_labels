@@ -14,6 +14,10 @@ jobs:
       pull-requests: write
       issues: write
     steps:
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -35,7 +39,7 @@ jobs:
         run: python .github/scripts/sync_labels.py --repository ${{ github.repository }} --number ${{ github.event.number }} --label_action ${{ github.event.action }} --label ${{ github.event.label.name }}
 
       - name: Issue labeled or unlabeled event
-        if: github.event_name == 'issues' && startsWith(github.event.labels.name, 'backport')
+        if: github.event_name == 'issues' && startsWith(github.event.label.name, 'backport')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python .github/scripts/sync_labels.py --repository ${{ github.repository }} --number ${{ github.event.issue.number }} --label_action ${{ github.event.action }} --is_issue --label ${{ github.event.label.name }}
