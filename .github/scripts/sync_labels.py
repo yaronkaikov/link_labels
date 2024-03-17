@@ -68,10 +68,10 @@ def sync_labels(repo, number, label, action, is_issue=False):
         target = repo.get_issue
     for pr_or_issue_number in linked_prs_or_issues:
         if action == 'labeled':
-            target(int(pr_or_issue_number)).add_to_labels(label)
+            target(int(pr_or_issue_number.number)).add_to_labels(label)
             print(f"Label '{label}' successfully added.")
         elif action == 'unlabeled':
-            target(int(pr_or_issue_number)).remove_from_labels(label)
+            target(int(pr_or_issue_number.number)).remove_from_labels(label)
             print(f"Label '{label}' successfully removed.")
         elif action == 'opened':
             copy_labels_from_linked_issues(repo, number)
@@ -83,7 +83,7 @@ def main():
     args = parser()
     github = Github(github_token)
     repo = github.get_repo(args.repo)
-    sync_labels(repo, args.number, args.label, args.action)
+    sync_labels(repo, args.number, args.label, args.action, args.is_issue)
 
 
 if __name__ == "__main__":
