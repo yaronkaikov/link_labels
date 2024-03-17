@@ -38,7 +38,7 @@ def copy_labels_from_linked_issues(pr_number):
                 print(f"Error processing issue #{issue_number}: {e}")
 
 
-def sync_labels_on_update(pr_or_issue_number, is_issue=False, label_action, label):
+def sync_labels_on_update(pr_or_issue_number, is_issue=False, label_action='opened', label=None):
     """
     Sync labels from an issue to its linked PR, or vice versa, when a new label is added.
     This function assumes that the caller knows whether the target is an issue or a PR.
@@ -47,12 +47,10 @@ def sync_labels_on_update(pr_or_issue_number, is_issue=False, label_action, labe
     linked_numbers = set(re.findall(r'Fixes:? (?:#|https.*?/issues/)(\d+)', target.body))
     for linked_number in linked_numbers:
         linked_target = repo.get_issue(int(linked_number)) if not is_issue else repo.get_pull(int(linked_number))
-        existing_labels = repo.get_labels(linked_target)
-        if label not in existing_labels:
-            if label_action == 'labeled':
-                linked_target.add_to_labels(label)
-            if label_action == 'unlabeled':
-                linked_target.remove_from_labels(label)
+        if label_action == 'labeled' and label not in linked_target.labels:
+            linked_target.add_to_labels(label)
+        if label_action == 'unlabeled' and label in linked_target.labels:
+            linked_target.remove_from_labels(label)
         print(f"Labels synced between issue/PR #{pr_or_issue_number} and linked issue/PR #{linked_number}")
 
 
