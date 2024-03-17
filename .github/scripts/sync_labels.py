@@ -67,6 +67,7 @@ def sync_labels(repo, number, label, action, is_issue=False):
         linked_prs_or_issues = get_linked_issues(repo, number)
         target = repo.get_issue
     for pr_or_issue_number in linked_prs_or_issues:
+        print(pr_or_issue_number)
         if action == 'labeled':
             target(int(pr_or_issue_number)).add_to_labels(label)
             print(f"Label '{label}' successfully added.")
@@ -83,7 +84,7 @@ def main():
     args = parser()
     github = Github(github_token)
     repo = github.get_repo(args.repo)
-    sync_labels(repo, args.number, args.label, args.action)
+    sync_labels(repo, args.number, args.label, args.action, args.is_issue)
 
 
 if __name__ == "__main__":
