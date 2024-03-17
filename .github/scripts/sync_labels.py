@@ -40,7 +40,7 @@ def get_linked_pr_from_issue_number(repo, number):
     linked_prs = []
     for pr in repo.get_pulls(state='all'):
         if f'{number}' in pr.body:
-            linked_prs.append(pr)
+            linked_prs.append(pr.number)
         else:
             break
     return linked_prs
@@ -62,17 +62,19 @@ def get_linked_issues(repo, number):
 def sync_labels(repo, number, label, action, is_issue=False):
     if is_issue:
         linked_prs_or_issues = get_linked_pr_from_issue_number(repo, number)
-        target = repo.get_pull
     else:
         linked_prs_or_issues = get_linked_issues(repo, number)
-        target = repo.get_issue
     for pr_or_issue_number in linked_prs_or_issues:
+        if is_issue:
+            target = repo.get_issue(pr_or_issue_number)
+        else:
+            target = repo.get_issue(int(pr_or_issue_number))
         print(pr_or_issue_number)
         if action == 'labeled':
-            target(int(pr_or_issue_number)).add_to_labels(label)
+            target.add_to_labels(label)
             print(f"Label '{label}' successfully added.")
         elif action == 'unlabeled':
-            target(int(pr_or_issue_number)).remove_from_labels(label)
+            target.remove_from_labels(label)
             print(f"Label '{label}' successfully removed.")
         elif action == 'opened':
             copy_labels_from_linked_issues(repo, number)
