@@ -56,7 +56,6 @@ def get_linked_pr(repo, issue_number):
     for pr in repo.get_pulls(state='all'):
         if pr.body and f"#{issue_number}" in pr.body:
             print(f'PR contains {issue_number} in Body')
-            print(pr.number)
             return pr.number
 
     # query = f"repo:{repo} is:pr is:open linked:issue {issue_number}"
@@ -85,12 +84,12 @@ def sync_labels(issue_numbers, pr_number, repo, label_action, label, is_issue):
                 if is_issue and pr_number is not None:
                     repo.get_pull(pr_number).add_to_labels(label)
                 else:
-                    repo.get_issue(issue_number).add_to_labels(label)
+                    repo.get_issue(int(issue_number)).add_to_labels(label)
             if label_action == 'unlabeled':
                 if is_issue:
                     repo.get_pull(pr_number).remove_from_labels(label)
                 else:
-                    repo.get_issue(issue_number).remove_from_labels(label)
+                    repo.get_issue(int(issue_number)).remove_from_labels(label)
 
 
 def main():
