@@ -1,33 +1,19 @@
-import argparse
+import os
 from github import Github
 import re
-import os
-import sys
 
+# Replace 'your_token_here' with your actual GitHub token
+g = Github(os.environ["GITHUB_TOKEN"])
 
-try:
-    github_token = os.environ["GITHUB_TOKEN"]
-except KeyError:
-    print("Please set the 'GITHUB_TOKEN' environment variable")
-    sys.exit(1)
-
-
-def parser():
-    parse = argparse.ArgumentParser()
-    parse.add_argument('--repository', type=str, required=True,
-                       help='Github repository name (e.g., scylladb/scylladb)')
-    parse.add_argument('--number', type=int, required=True,
-                       help='Pull request or issue number to sync labels from')
-    parse.add_argument('--label', type=str, default=None, help='Label to add/remove from an issue or PR')
-    parse.add_argument('--is_issue', action='store_true', help='Determined if label change is in Issue or not')
-    parse.add_argument('--label_action', type=str, choices=['opened', 'labeled', 'unlabeled'], required=True, help='Sync labels action')
-    return parse.parse_args()
+# Replace 'owner/repo' with the owner and repository you're interested in
+repo_name = "yaronkaikov/link_labels"
+repo = g.get_repo(repo_name)
 
 
 def copy_labels_from_linked_issues(pr_number):
     pr = repo.get_pull(pr_number)
     if pr.body:
-        linked_issue_numbers = set(re.findall(r'Fixes:? (?:#|https.*?/issues/)(\d+)', pr.body))
+        linked_issue_numbers = set(re.findall(r"#(\d+)", pr.body))
         for issue_number in linked_issue_numbers:
             try:
                 issue = repo.get_issue(int(issue_number))
@@ -38,28 +24,44 @@ def copy_labels_from_linked_issues(pr_number):
                 print(f"Error processing issue #{issue_number}: {e}")
 
 
-def sync_labels_on_update(pr_or_issue_number, is_issue=False, label_action='opened', label=None):
+def get_linked_pr_from_issue_number(number):
+    linked_prs = []
+    for pr in repo.get_pulls(state='all'):
+        if f'{number}' in pr.body:
+            linked_prs.append(pr)
+        else:
+            break
+    pattern = re.compile(r'Fixes:? (?:#|https.*?/issues/)(\d+)', re.IGNORECASE)
+    for pr in linked_prs:
+        linked_numbers = re.findall(pattern, pr.body)
+    print(linked_numbers)
+    return linked_numbers
+
+
+def sync_labels_on_update(pr_or_issue_number, is_issue=False):
     """
     Sync labels from an issue to its linked PR, or vice versa, when a new label is added.
     This function assumes that the caller knows whether the target is an issue or a PR.
     """
-    target = repo.get_issue(pr_or_issue_number) if is_issue else repo.get_pull(pr_or_issue_number)
-    linked_numbers = set(re.findall(r'Fixes:? (?:#|https.*?/issues/)(\d+)', target.body))
+    if is_issue:
+        linked_pr = get_linked_pr_from_issue_number(pr_or_issue_number)
+    else:
+        target = repo.get_pull(pr_or_issue_number)
     for linked_number in linked_numbers:
-        linked_target = repo.get_issue(int(linked_number)) if not is_issue else repo.get_pull(int(linked_number))
-        if label_action == 'labeled' and label not in linked_target.labels:
-            linked_target.add_to_labels(label)
-        if label_action == 'unlabeled' and label in linked_target.labels:
-            linked_target.remove_from_labels(label)
+        linked_target = repo.get_issue(linked_number) if not is_issue else repo.get_pull(linked_number)
+        print(linked_target.label)
+        existing_labels = [label.name for label in linked_target.labels]
+        for label in target.labels:
+            if label.name not in existing_labels:
+                linked_target.add_to_labels(label.name)
         print(f"Labels synced between issue/PR #{pr_or_issue_number} and linked issue/PR #{linked_number}")
 
 
-if __name__ == "__main__":
-    args = parser()
-    github = Github(github_token)
-    repo = github.get_repo(args.repository)
-    number = args.number
-    if args.label_action == 'opened':
-        copy_labels_from_linked_issues(number)
-    else:
-        sync_labels_on_update(number, args.is_issue, args.label_action, args.label)
+# Example usage:
+# This is for new PR only
+# pr_number = 50  # Replace with the specific PR number you're interested in
+# copy_labels_from_linked_issues(pr_number)
+
+
+# To sync labels when a new label is added, determine whether the target is an issue or a PR and its number:
+sync_labels_on_update(44, is_issue=True)  # Replace 123 with the actual PR or issue number
