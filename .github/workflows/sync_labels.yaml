@@ -3,7 +3,7 @@ name: Sync labels
 on:
   pull_request:
     types: [opened, labeled, unlabeled]
-    branches: [master, next]
+    branches: [master, next, main]
   issues:
     types: [labeled, unlabeled]
 
@@ -30,16 +30,16 @@ jobs:
         if: github.event.action == 'opened'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python .github/scripts/sync_labels.py --repository ${{ github.repository }} --number ${{ github.event.number }} --label_action ${{ github.event.action }}
+        run: python .github/scripts/sync_labels2.py --repository ${{ github.repository }} --number ${{ github.event.number }} --label_action ${{ github.event.action }}
 
       - name: Pull request labeled or unlabeled event
         if: github.event_name == 'pull_request' && startsWith(github.event.label.name, 'backport')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python .github/scripts/sync_labels.py --repository ${{ github.repository }} --number ${{ github.event.number }} --label_action ${{ github.event.action }} --label ${{ github.event.label.name }}
+        run: python .github/scripts/sync_labels2.py --repository ${{ github.repository }} --number ${{ github.event.number }} --label_action ${{ github.event.action }} --label ${{ github.event.label.name }}
 
       - name: Issue labeled or unlabeled event
         if: github.event_name == 'issues' && startsWith(github.event.label.name, 'backport')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python .github/scripts/sync_labels.py --repository ${{ github.repository }} --number ${{ github.event.issue.number }} --label_action ${{ github.event.action }} --is_issue --label ${{ github.event.label.name }}
+        run: python .github/scripts/sync_labels2.py --repository ${{ github.repository }} --number ${{ github.event.issue.number }} --label_action ${{ github.event.action }} --is_issue --label ${{ github.event.label.name }}
