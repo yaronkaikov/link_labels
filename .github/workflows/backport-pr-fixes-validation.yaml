@@ -15,6 +15,6 @@ jobs:
             const prefix = 'Fixes:'; // Define the required prefix here
             const body = context.payload.pull_request.body;
             
-            if (!body.startsWith(prefix)) {
+            if (!body.includes(prefix)) {
               core.setFailed(`PR body must start with "${prefix}".`);
             }
