@@ -4,17 +4,35 @@ on:
   pull_request:
     types: [opened, reopened, edited]
 
-jobs:
+#jobs:
+#  check-prefix:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Check PR body for specific prefix
+#        uses: actions/github-script@v6
+#        with:
+#          script: |
+#            const prefix = 'Fixes:'; // Define the required prefix here
+#            const body = context.payload.pull_request.body;
+#
+#            if (!body.includes(prefix)) {
+#              core.setFailed(`PR body must start with "${prefix}".`);
+#            }
+
+job:
   check-prefix:
     runs-on: ubuntu-latest
+    container: python:3.12
     steps:
+      - name: checkout code
+        uses: actions/checkout@v2
+
       - name: Check PR body for specific prefix
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const prefix = 'Fixes:'; // Define the required prefix here
-            const body = context.payload.pull_request.body;
-            
-            if (!body.includes(prefix)) {
-              core.setFailed(`PR body must start with "${prefix}".`);
-            }
+        run: |
+          import sys
+          prefix = 'Fixes'  # The prefix to check for
+          pr_body = sys.argv[1]  # PR body passed as the first argument
+          if prefix not in pr_body:
+            print(f"::error::PR body must contain '{prefix}'.")
+            sys.exit(1)  # Exit with an error status
+        shell: python
