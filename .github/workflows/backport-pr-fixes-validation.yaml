@@ -1,0 +1,29 @@
+name: PR-Issue-ExtractorActions
+
+on:
+  pull_request:
+    types: [opened]
+    branches:
+      - main
+
+jobs:
+  Test_Action:
+    runs-on: ubuntu-latest
+    env:
+      MY_TAG: 'nope'
+
+    name: Test Local Action
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Run Action
+        uses: TheBurchLog/body-env-tag-action@1.0
+        with:
+          tag: 'Fixes:'
+          env-variable: 'MY_TAG'
+          default-value: 'missing'
+          tag-position: -1
+
+      - name: Test
+        shell: bash
+        run: echo "${{env.MY_TAG}}"
